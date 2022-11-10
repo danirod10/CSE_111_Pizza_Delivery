@@ -170,8 +170,8 @@ INSERT INTO Orders(order_id, cust_id,delivery_time, delivery_date) VALUES
 (1031,19,'8:00','2022-10-05'),
 (1032,18,'8:30','2022-10-05'),
 (1033,17,'5:30','2022-10-31'),
-(1034,16,'6:00','2022-10-31'),
-(1035,15,'6:00','2022-10-31'),
+(1034,16,'6:30','2022-10-31'),
+(1035,15,'6:30','2022-10-31'),
 (1036,14,'7:00','2022-10-31'),
 (1037,13,'7:30','2022-10-31'),
 (1038,12,'8:00','2022-10-31'),
@@ -299,7 +299,7 @@ INSERT INTO Shifts(shift_id,emp_id, start_time, s_date, end_time) VALUES
 (11,2,'6:00','2022-10-03','10:00'),
 (12,4,'6:30','2022-10-03','10:00'),
 (13,3,'5:00','2022-10-05','9:00'),
-(14,5,'5:30,','2022-10-05','10:00'),
+(14,5,'5:30','2022-10-05','10:00'),
 (15,7,'6:00','2022-10-05','10:00'),
 (16,9,'6:30','2022-10-05','10:00'),
 (17,10,'6:30','2022-10-05','10:00'),
@@ -452,3 +452,153 @@ INSERT INTO Ingredients(ingredient_id,ing_info,cost) VALUES
 (3012,'mushroom',00.02),
 (3013,'jalapeno',00.02),
 (3014,'pineapple',00.02);
+
+--1. Add customer info
+INSERT INTO Customers(cust_id, c_name, c_address, c_phone) VALUES
+(51, 'Marissa Rodriguez', '1645 Columbia Mine Road', 3476734474),
+(52, 'John Hill', '4890 Shadowmar Drive', 4145351455),
+(53, 'Gerard Way', '2052 Scenic Way', 2243255975);
+
+--2. Customer wants to update new phone number
+
+UPDATE Customers
+SET c_address ='1062 Oakway Lane', c_phone = '5556869777' 
+WHERE cust_id = 5;
+
+--3. Add a order(order placed)
+INSERT INTO Orders(order_id, cust_id,delivery_time, delivery_date) VALUES
+(1050,'50','6:00','2022-11-01');
+
+--4. Delete order 
+DELETE FROM Orders 
+WHERE order_id = 1050;
+
+--5. Add item to already made order
+INSERT INTO Ordered_items(order_id,item_id) VALUES
+(1049,2001),
+(1048,2002),
+(1002,2000);
+
+--6. We ran out of pepperoni pizzas delete item from any orders that ordered one
+DELETE FROM Ordered_items
+Where item_id = 2001;
+
+--7. Add employee info(New hire)
+INSERT INTO Employees(emp_id, e_name, hourly_wage, e_phone) VALUES
+(11,'Chet Hanks', 16.00,5559992020);
+
+--8. Show the 5 largest amounts of deliveries an employee has made while working a single shift.
+SELECT e.e_name AS empName, s.shift_id AS shiftNumber, COUNT(d.order_id) AS numDeliveries
+FROM Employees AS e, Shifts AS s, Deliveries AS d
+WHERE e.emp_id = s.emp_id
+  AND e.emp_id = d.emp_id
+GROUP BY e.emp_id, s.shift_id ORDER BY COUNT(d.order_id) DESC 
+LIMIT 5;
+
+
+--9. All of the ingredients that are in a combo pizza
+SELECT DISTINCT i.ing_info AS ingredient
+FROM Ingredients i, Recipes r, Menu_item m
+WHERE m.item_id = r.item_id
+  AND m.item_id = 2003
+  AND i.ingredient_id = r.ingredient_id;
+
+--10. The most popularly ordered menu item id and name
+SELECT i AS item_id, m.description FROM (
+SELECT i2.item_id AS i, COUNT(i2.item_id) 
+FROM Ordered_items AS i2 
+GROUP BY i2.item_id ORDER BY 
+COUNT(i2.item_id) DESC LIMIT 1), Menu_item m
+WHERE m.item_id = i;
+
+
+-- 11. how many ingredients are in a combo pizza?
+SELECT COUNT(Recipes.ingredient_id)
+FROM Recipes
+WHERE Recipes.item_id = 2003;
+ 
+
+--12. how many deliveries made on october 31st at 9pm
+SELECT COUNT(Orders.order_id)
+FROM Deliveries, Orders
+WHERE Deliveries.order_id = Orders.order_id
+AND delivery_time = "9:00"
+AND delivery_date = "2022-10-31";
+ 
+
+-- 13. Give an employee a $5 raise
+UPDATE Employees
+SET hourly_wage = hourly_wage + 5
+WHERE emp_id = 1;
+
+-- 14. Assign a delivery to an employee
+INSERT INTO Orders
+VALUES (1050, 51, '7:00', '2022-11-07');
+INSERT INTO Ordered_items
+VALUES (1050, 2000);
+INSERT INTO Deliveries
+VALUES (1050, NULL);
+INSERT INTO Customers
+VALUES (51, 'Billy', '123 Billy St.', 5329164150);
+UPDATE Deliveries
+SET emp_id = 1
+WHERE order_id = 1050;
+
+-- 15. A complaint was made because a pizza that was supposed to be delivered at 6:00pm was delivered at 8:00pm.
+-- This happened on Halloween. Find which employee took 6:00pm deliveries
+SELECT e_name, shift_id
+FROM Orders, Employees, Deliveries, Shifts
+WHERE Orders.order_id = Deliveries.order_id
+AND Shifts.emp_id = Deliveries.emp_id
+AND Employees.emp_id = Deliveries.emp_id
+AND Shifts.s_date = '2022-10-31'
+AND Orders.delivery_date = '2022-10-31'
+AND Orders.delivery_time = '6:00';
+
+
+-- 16. How many pizzas were ordered on october 5th
+SELECT COUNT(Orders.order_id)
+FROM Orders, Deliveries
+WHERE Orders.order_id = Deliveries.order_id
+AND Orders.delivery_date = '2022-10-05';
+
+-- 17. How much did the restaurant make on profit on october 31st
+SELECT
+(SELECT SUM(m.price) 
+FROM Menu_item AS m, Ordered_items AS oi, Orders AS o
+WHERE o.delivery_date = DATE('2022-10-31') 
+AND o.order_id = oi.order_id 
+AND oi.item_id = m.item_id)
+-
+(SELECT SUM(i.cost)
+FROM Menu_item AS m, Ingredients AS i, Ordered_items AS oi, Orders o, Recipes AS r
+WHERE o.delivery_date = DATE('2022-10-31')
+AND o.order_id = oi.order_id 
+AND oi.item_id = m.item_id 
+AND m.item_id = r.item_id 
+AND r.ingredient_id = i.ingredient_id) AS Profit;
+
+-- 18. Which employees worked on October 5th
+SELECT COUNT(Employees.emp_id)
+FROM Employees, Shifts
+WHERE Shifts.emp_id = Employees.emp_id
+AND Shifts.s_date = '2022-10-05';
+
+
+--19. Delete employee bob (fired for sleeping on the job)
+DELETE FROM Employees
+WHERE emp_id = 1;
+
+--20. Order a combo pizza add jalapenos
+INSERT INTO Orders
+VALUES (1051, 51, '7:00', '2022-11-09');
+INSERT INTO Ordered_items
+VALUES (1051, 2008);
+
+SELECT * FROM Ordered_items;
+SELECT * FROM Customers;
+SELECT * FROM Deliveries;
+SELECT * FROM Employees;
+SELECT * FROM Shifts;
+SELECT * FROM Menu_item;
+
