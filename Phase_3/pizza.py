@@ -93,7 +93,7 @@ def Employee_Screen():
 def Manager_Screen():
     print("Welcome! Please make your selection below.")
     while (True):
-        print("1: Add a new employee\n2: Create a new shift\n0: back\nq: quit")
+        print("1: Add a new employee\n2: Create a new shift\n3: Delete an employee\n0: back\nq: quit")
         v = input()
         if v == "1":
             # add a new employee
@@ -101,6 +101,9 @@ def Manager_Screen():
         elif v == "2":
             # create a new shift
             Create_Shift()
+        elif v == "3":
+            # delete an employee
+            Delete_Employee()
         elif v == "q":
             exit()
         elif v == "0":
@@ -274,6 +277,52 @@ def Create_Account():
         Customer_Screen()
     print("Sign up successful. Thank you for signing up!\n")
     Customer_Screen()
+
+def Delete_Employee():
+    # Show all employees
+    sql = "SELECT * FROM Employees"
+    data = fetchData(sql)
+    if (data == -1 or data == []):
+        print("Error: No employees to display. Please try again.")
+        Manager_Screen()
+
+    # grab each employee id
+    emp_ids = []
+    for row in data:
+        emp_ids.append(row[0])
+    #print(emp_ids)
+
+    print("All Dani's Pizza Employees: ")
+    headers = ['Employee ID', 'Name', 'Hourly Wage', 'Phone']
+    data.insert(0, headers)
+    for row in data:
+        print("{: >20} {: >40} {: >20} {: >20}".format(*row))
+
+    print("Please enter the Employee ID to delete or 0 to quit: ")
+    v = input()
+
+    # check that v is an integer
+    try:
+        v = int(v)
+    except:
+        print("Invalid employee ID. Please try again.")
+        Manager_Screen()
+
+    # check that v is an employee id in our employee table
+    if v == 0:
+        Manager_Screen()
+    elif v not in emp_ids:
+        print("Invalid employee ID. Please try again. HERE")
+        Manager_Screen()
+    else: # v is in emp_ids
+        sql = "DELETE FROM Employees WHERE emp_id = {}".format(int(v))
+        data = putData(sql)
+        if data == 1:
+            print("Successfully deleted employee.")
+            # will return to Manager Screen
+        else:
+            print("Unable to delete employee "+v+". Please try again.")
+            Manager_Screen()
 
 
 def main():
